@@ -4,7 +4,9 @@ from azure.core.credentials import AzureKeyCredential
 from flask import Flask, render_template, request, jsonify
 import openai
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 # Initialize LLM model
 openai_client = openai.AzureOpenAI(
   azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT"), 
