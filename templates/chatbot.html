@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente de Búsqueda Legal - Adecco</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <!-- Importación de la fuente Lust Regular desde Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lust:wght@400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-base: rgb(92, 184, 178);
+            --color-hover: rgb(188, 224, 223);
+            --color-hover-2: #edf0f0f3;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100% !important;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            background-color: white; /* Fondo blanco */
+        }
+        .container {
+            display: flex;
+            flex-grow: 1;
+            text-align: center; /* Centramos el logo y los títulos */
+            width: 100%;
+            max-width: 100% !important;
+            padding: 0px;
+        }
+        .sidebar {
+            width: 28vw;
+            padding: 15px;
+            background-color: var(--color-base);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-buttons {
+            position: absolute;
+            width: 28vw;
+            height: 13vh;
+            bottom: 0;
+            left: 0;
+            padding-left: 1.4vw;
+            padding-right: 1.4vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .render-dropdown {
+            position: absolute;
+            width: 28vw;
+            height: 59vh;
+            top: 28vh;
+            left: 0;
+            padding-left: 1.4vw;
+            padding-right: 1.4vw;
+            display: flex;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            border-radius: 10px;
+        }
+        .container-dropdown {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 4vh;
+            border-radius: 8px;
+            border: 1px solid #767070;;
+            box-shadow: 0 0 8px #2a3036;
+            padding: .3vh .2vw;
+        }
+
+        .sidebar button {
+            width: 100%;
+            height: 100%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 5px;
+            background-color: transparent;
+            border-color: transparent;
+        }
+        .sidebar button.active {
+            background-color: white !important;
+            color: black !important;
+        }
+        .sidebar button:hover {
+            border: 1px solid white;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            width: 72vw;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-container {
+            display: flex;
+            top: 20vh;
+            flex-direction: column;
+            height: 75vh;
+            margin: 20px; /* Margen alrededor del chat-container */
+            border: 2px solid var(--color-base); /* Borde color turquesa oscuro */
+            border-radius: 15px; /* Esquinas redondeadas */
+            position: absolute;
+            width: 68vw;
+        }
+        #chat-box {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin: 5px;
+            padding: 15px;
+            background: white;
+            height: calc(100vh - 150px); 
+        }
+        #chat-form {
+            display: flex;
+            border-top: 1px solid #ddd;
+            padding: 15px;
+            background: #fff;
+            margin: 5px;
+        }
+        #user_input {
+            flex-grow: 1;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 20px;
+            margin-right: 10px;
+        }
+        #send_button {
+            background-color: var(--color-base); /* Botón de enviar en color turquesa */
+            border-color: var(--color-base);
+        }
+        .hidden {
+            display: none;
+        }
+        .faqs-list, .references {
+            margin-top: 20px;
+            width: 100%;
+        }
+        .faq-button {
+            display: block;
+            width: 100% !important;
+            height: auto !important;
+            margin-bottom: 5px;
+            padding: 10px;
+            font-size: 20px;
+            color: white !important;
+            text-align: left;
+            cursor: pointer;
+            border: transparent !important;
+            justify-content: left !important;
+        }
+        .faq-button:hover {
+            text-shadow: #fff 1px 0 10px;
+        }
+        .title-active-tab {
+            position: absolute;
+            width: 28vw;
+            height: 8vh;
+            left: 0;
+            top: 20vh;
+            color: white;
+            font-family: Open Sans Condensed;
+            font-size: 35px;
+            font-weight: 700;
+            padding: 0 1.4vw;
+            text-shadow: #fff 1px 0 10px;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .reference-bubble {
+            border-radius: 15px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: var(--color-hover);
+            border: 1px solid var(--color-base);
+            display: flex;
+            align-items: center;
+            justify-content: left;
+            text-align: left;
+            flex-direction: column;
+        }
+        h1 {
+            color: black; /* Texto del título en turquesa */
+            font-family: 'Lust', serif; /* Fuente Lust Regular */
+            font-size: 40px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 20px;
+            width: 14vw;
+        }
+        hd2 {
+            color: var(--color-base); /* Texto del título en turquesa */
+            font-family: 'Lust', serif; /* Fuente Lust Regular */
+            font-size: 45px;
+            position: absolute;
+            top: 13vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 68vw;
+        }
+        hd3 {
+            color: black; /* Texto del título en turquesa */
+            font-family: 'Archer', serif; /* Fuente Lust Regular */
+            font-size: 25px;
+            position: absolute;
+            top: 18vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 68vw;
+        }
+        .chat-message-right,
+        .chat-message-left {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .chat-message-right img,
+        .chat-message-left img {
+            width: 40px;
+            height: 40px;
+        }
+        .chat-message-right .message-content,
+        .chat-message-left .message-content {
+            max-width: 70%;
+        }
+        .chat-message-right .message-content {
+            margin-left: auto;
+            background: var(--color-hover);
+        }
+        .chat-message-left .message-content {
+            background: #f1f1f1;
+        }
+        .message-content {
+            border-radius: 20px;
+            padding: 10px;
+        }
+        .message-time {
+            font-size: 0.75rem;
+            color: #999;
+            text-align: right;
+        }
+        .contact-list-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        .contact-list-item img {
+            margin-right: 10px;
+        }
+        .div-line {
+            height: 1px;
+            background-color: #767070;
+            position: absolute;
+            top: 20vh;
+            left: 1.4vw;
+            width: 25.2vw;
+        }
+        .div-vertical-line {
+            height: 10vh;
+            background-color: #767070;
+            width: 1px;
+        }
+        .logo-title {
+            position: absolute;
+            width: 25.2vw;
+            height: 14vh;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            margin: 3vh 0;
+        }
+        .topbar-container {
+            width: 68vw;
+            height: 13vh;
+            margin-right: 0;
+            background: #fff;
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            justify-content: right;
+            align-items: center;
+            font-weight: 620;
+            font-size: 20px;
+            padding: 2vw;
+        }
+        .user-topbar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .letter-human {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 500;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            width: 45px;
+            height: 45px;
+            background: black;
+            margin-left: 10px;
+        }
+        .topbar-usecase-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo-title">
+                <img src="{{ url_for('static', filename='images/The Adecco Group Brand.png') }}" alt="Adecco Logo" style="width: 14vw;"/>
+                <div class="div-vertical-line"></div>
+                <h1>Legal BOT</h1>
+            </div>
+            <div class="div-line"></div>
+            <div class="title-active-tab" id="title-active-tab">
+                FAQs
+            </div>
+            <div class="render-dropdown">
+                <!-- FAQs Section -->
+                <div id="faqs-list" class="faqs-list">
+                    <button class="faq-button">¿Cómo define esta política un "soborno" y qué ejemplos ofrece para identificarlo?</button>
+                    <button class="faq-button">¿Cómo se maneja la contratación de Representantes o Proveedores según la política anticorrupción?</button>
+                    <button class="faq-button">¿Cómo se gestiona el entrenamiento de los empleados en relación con la prevención de la corrupción y los sobornos?</button>
+                </div>
+
+                <!-- References Section -->
+                <div id="references-list" class="references hidden">
+                    
+                </div>
+            </div>
+            <div class="sidebar-buttons">
+                <div class="container-dropdown">
+                    <button id="faqs-button" style="margin: 5px;">FAQs</button>
+                    <button id="references-button" style="margin: 5px;">Referencias</button>
+                </div>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="topbar-container">
+                <svg style="margin-left:15px; margin-right:15px;" xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" fill="currentColor" class="bi bi-robot" viewBox="0 0 16 16">
+                    <path d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5M3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.6 26.6 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.93.93 0 0 1-.765.935c-.845.147-2.34.346-4.235.346s-3.39-.2-4.235-.346A.93.93 0 0 1 3 9.219zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a25 25 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25 25 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135"/>
+                    <path d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2zM14 7.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.5A3.5 3.5 0 0 1 5.5 4h5A3.5 3.5 0 0 1 14 7.5"/>
+                </svg>
+                <div class="topbar-usecase-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30px" height="30px" fill="currentColor" class="bi bi-file-earmark-break-fill" viewBox="0 0 16 16" style="margin-left:15px; margin-right:15px;">
+                        <path d="M4 0h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V9H2V2a2 2 0 0 1 2-2m5.5 1.5v2a1 1 0 0 0 1 1h2zM2 12h12v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM.5 10a.5.5 0 0 0 0 1h15a.5.5 0 0 0 0-1z"/>
+                    </svg>
+                    <div>Legal BOT</div>
+                </div>
+                <div class="user-topbar" style="margin-left:15px; margin-right:15px;">
+                    <div>Patricio Arana</div>
+                    <div class="letter-human">PA</div>
+                </div>
+            </div>
+            <hd2>Asistente de Búsqueda sobre Documentación Legal</hd2>
+            <hd3>Haz una pregunta relacionada con los documentos legales internos, y te proporcionaré la información relevante.</hd3>
+            <div class="chat-container flex-grow-1 d-flex flex-column">
+                <div id="chat-box" class="flex-grow-1">
+                    <div id="chat-messages">
+                        <!-- Aquí aparecerán los mensajes del chat -->
+                    </div>
+                </div>
+                <form id="chat-form">
+                    <input id="user_input" type="text" class="form-control" placeholder="Escriba su consulta..." required>
+                    <button id="send_button" onclick="sendMessage()" class="btn btn-primary">Enviar</button>
+                </form> 
+            </div>
+        </div>
+    </div>  
+
+    <script>
+        function sendMessage() {
+            const userInput = $('#user_input').val();
+            if (userInput.trim() === '') return;
+            addMessageToChat('Patricio Arana', userInput, 'right');
+            $('#user_input').val('');
+
+            $.ajax({
+                url: '/ask',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ message: userInput }),
+                success: function(response) {
+                    addMessageToChat(response.name, response.content, 'left', 2);
+                    addReferences(response.context);
+                }
+            });
+        }
+
+        function addMessageToChat(sender, message, alignment, num_send) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('chat-message-' + alignment, 'mb-4');
+
+            messageElement.innerHTML = `
+                <div class="message-content ${alignment === 'right' ? 'me-3' : 'ms-3'}">
+                    <img src="https://bootdey.com/img/Content/avatar/avatar${alignment === 'right' ? '1' : num_send}.png" class="rounded-circle" width="40" height="40">
+                    <div class="text-muted small text-nowrap mt-2">${new Date().toLocaleTimeString()}</div>
+                    <div class="fw-bold mb-1"><strong>${sender}</strong></div>
+                    ${message}
+                </div>
+            `;
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addReferences(context) {
+            const ReferenceList = document.getElementById('references-list');
+            ReferenceList.innerHTML = ''
+            for(let i = 0; i < context.length; i++) {
+                const Title = context[i].file_name;
+                const Reference = context[i].content;
+                const Link = context[i].link;
+                const Page = context[i].page;
+                const ReferenceElement = document.createElement('div');
+                ReferenceElement.classList.add('reference-bubble');
+
+                ReferenceElement.innerHTML = `
+                <div class="fw-bold mb-1" style="font-size: 17px;"><strong>
+                    ${Title}
+                </strong></div>
+                <div>
+                    ${Reference}
+                </div>
+                <div>
+                    <a href="${Link}" target="_blank">${Title} página ${Page}</a>
+                </div>
+                `;
+
+                ReferenceList.appendChild(ReferenceElement);
+            }
+        }
+
+        $('#faqs-button').on('click', function() {
+            $('#faqs-list').removeClass('hidden');
+            $('#references-list').addClass('hidden');
+            $('#faqs-button').addClass('active');
+            $('#references-button').removeClass('active');
+            $('#title-active-tab').text('FAQs')
+        });
+
+        $('#references-button').on('click', function() {
+            $('#references-list').removeClass('hidden');
+            $('#faqs-list').addClass('hidden');
+            $('#faqs-button').removeClass('active');
+            $('#references-button').addClass('active');
+            $('#title-active-tab').text('Referencias')
+        });
+
+        $('.faq-button').on('click', function() {
+            const question = $(this).text();
+            $('#user_input').val(question);
+            sendMessage()
+        });
+    </script>
+</body>
+</html>
