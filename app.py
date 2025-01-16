@@ -2,11 +2,31 @@ from azure.search.documents import SearchClient
 from azure.search.documents.models import VectorizedQuery
 from azure.core.credentials import AzureKeyCredential
 from flask import Flask, render_template, request, jsonify
+from dotenv import load_dotenv
 import openai
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# local = True
+
+# if local:
+#     os.environ.pop("AZURE_OPENAI_ENDPOINT", None)
+#     os.environ.pop("AZURE_OPENAI_API_KEY", None)
+#     os.environ.pop("AZURE_OPENAI_API_VERSION", None)
+#     os.environ.pop("AZURE_OPENAI_CHAT_DEPLOYMENT_NAME", None)
+#     os.environ.pop("APPLICATIONINSIGHTS_CONNECTION_STRING", None)
+#     os.environ.pop("APPINSIGHTS_INSTRUMENTATIONKEY", None)
+
+#     # Vuelve a cargar el archivo .env
+#     load_dotenv()
+
+# load_dotenv(override=True) # take environment variables from .env.
+
+print(os.getenv("AZURE_SEARCH_INDEX_NAME"))
+print(os.getenv("AZURE_OPENAI_ENDPOINT"))
+print(os.getenv("AZURE_OPENAI_API_KEY"))
+print(os.getenv("AZURE_OPENAI_API_VERSION"))
+print(os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT_NAME"))
+
 # Initialize LLM model
 openai_client = openai.AzureOpenAI(
   azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT"), 
@@ -36,7 +56,7 @@ def vector_search(query, embeddings_client, search_client):
 
     print(len(embedded_query))
 
-    vector_query = VectorizedQuery(vector=embedded_query, k_nearest_neighbors=5, fields="contentVector")
+    vector_query = VectorizedQuery(vector=embedded_query, k_nearest_neighbors=7, fields="contentVector")
 
     results = search_client.search(  
         search_text=None,  
@@ -65,9 +85,13 @@ def query_llm_with_context(context_chunks, user_query, openai_client):
     context = "\n".join(top_chunks)
     user_prompt = f"Context:\n{context}\n\nQuestion: {user_query}\nAnswer:"
 
+    user_prompt = user_prompt.replace('...', '')
+
     system_prompt = build_system_prompt()
 
     messages = [{'role': 'system', 'content': system_prompt}, {'role': 'user', 'content': user_prompt}]
+
+    print(messages)
 
     # Query the OpenAI GPT model
     response = openai_client.chat.completions.create(
@@ -112,6 +136,10 @@ def get_response():
         top_chunks = vector_search(query=user_query, embeddings_client=embeddings_client, search_client=search_client)
 
         answer = query_llm_with_context(top_chunks, user_query, openai_client)
+
+        answer['content'] = answer['content'].replace("```html", "").replace("```", "")
+
+        print(answer['content'])
 
         return jsonify(answer)
     else: 
