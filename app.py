@@ -6,20 +6,20 @@ from dotenv import load_dotenv
 import openai
 import os
 
-# local = True
+local = True
 
-# if local:
-#     os.environ.pop("AZURE_OPENAI_ENDPOINT", None)
-#     os.environ.pop("AZURE_OPENAI_API_KEY", None)
-#     os.environ.pop("AZURE_OPENAI_API_VERSION", None)
-#     os.environ.pop("AZURE_OPENAI_CHAT_DEPLOYMENT_NAME", None)
-#     os.environ.pop("APPLICATIONINSIGHTS_CONNECTION_STRING", None)
-#     os.environ.pop("APPINSIGHTS_INSTRUMENTATIONKEY", None)
+if local:
+    os.environ.pop("AZURE_OPENAI_ENDPOINT", None)
+    os.environ.pop("AZURE_OPENAI_API_KEY", None)
+    os.environ.pop("AZURE_OPENAI_API_VERSION", None)
+    os.environ.pop("AZURE_OPENAI_CHAT_DEPLOYMENT_NAME", None)
+    os.environ.pop("APPLICATIONINSIGHTS_CONNECTION_STRING", None)
+    os.environ.pop("APPINSIGHTS_INSTRUMENTATIONKEY", None)
 
-#     # Vuelve a cargar el archivo .env
-#     load_dotenv()
+    # Vuelve a cargar el archivo .env
+    load_dotenv()
 
-# load_dotenv(override=True) # take environment variables from .env.
+load_dotenv(override=True) # take environment variables from .env.
 
 print(os.getenv("AZURE_SEARCH_INDEX_NAME"))
 print(os.getenv("AZURE_OPENAI_ENDPOINT"))
